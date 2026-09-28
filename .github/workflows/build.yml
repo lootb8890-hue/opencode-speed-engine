@@ -1,0 +1,58 @@
+name: build-engine-speed
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ci
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Clone upstream at pinned SHA
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/anomalyco/opencode.git src
+          git -C src fetch --depth 1 origin 8d05153965bee0a1e46eccffe944dc84d0b0c6f1
+          git -C src checkout 8d05153965bee0a1e46eccffe944dc84d0b0c6f1
+
+      - name: Apply speed patch
+        run: |
+          cd src
+          git apply --whitespace=nowarn ../ci/speed.patch
+          git diff --stat
+
+      - name: Install deps
+        run: cd src && bun install --no-save
+
+      - name: Build linux-x64
+        run: cd src/packages/opencode && bun run build --single
+
+      - name: Stash x64 binary
+        run: |
+          mkdir -p ci/out
+          cp src/packages/opencode/dist/opencode-linux-x64/bin/opencode ci/out/opencode-linux-x64
+
+      - name: Build linux-arm64
+        run: cd src/packages/opencode && bun run build --linux-arm64
+
+      - name: Stash arm64 binary
+        run: |
+          cp src/packages/opencode/dist/opencode-linux-arm64/bin/opencode ci/out/opencode-linux-arm64
+
+      - name: Smoke test (x64 on runner)
+        run: chmod +x ci/out/opencode-linux-x64 && ci/out/opencode-linux-x64 --version
+
+      - name: List artifacts
+        run: ls -la ci/out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: opencode-speed
+          path: ci/out/
+          retention-days: 14

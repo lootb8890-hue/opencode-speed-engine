@@ -1,0 +1,83 @@
+﻿diff --git a/packages/opencode/script/build.ts b/packages/opencode/script/build.ts
+index ce45f77..057dcb8 100755
+--- a/packages/opencode/script/build.ts
++++ b/packages/opencode/script/build.ts
+@@ -17,6 +17,7 @@ import { Script } from "@opencode-ai/script"
+ import pkg from "../package.json"
+ 
+ const singleFlag = process.argv.includes("--single")
++const linuxArm64Flag = process.argv.includes("--linux-arm64")
+ const baselineFlag = process.argv.includes("--baseline")
+ const skipInstall = process.argv.includes("--skip-install")
+ const sourcemapsFlag = process.argv.includes("--sourcemaps")
+@@ -113,8 +114,10 @@ const allTargets: {
+   },
+ ]
+ 
+-const targets = singleFlag
+-  ? allTargets.filter((item) => {
++const targets = linuxArm64Flag
++  ? [{ os: "linux", arch: "arm64" }]
++  : singleFlag
++    ? allTargets.filter((item) => {
+       if (item.os !== process.platform || item.arch !== process.arch) {
+         return false
+       }
+diff --git a/packages/opencode/src/effect/runtime-flags.ts b/packages/opencode/src/effect/runtime-flags.ts
+index 65e02f0..17c265a 100644
+--- a/packages/opencode/src/effect/runtime-flags.ts
++++ b/packages/opencode/src/effect/runtime-flags.ts
+@@ -51,7 +51,10 @@ export class Service extends ConfigService.Service<Service>()("@opencode/Runtime
+   experimentalIconDiscovery: enabledByExperimental("OPENCODE_EXPERIMENTAL_ICON_DISCOVERY"),
+   outputTokenMax: positiveInteger("OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX"),
+   bashDefaultTimeoutMs: positiveInteger("OPENCODE_EXPERIMENTAL_BASH_DEFAULT_TIMEOUT_MS"),
+-  experimentalNativeLlm: bool("OPENCODE_EXPERIMENTAL_NATIVE_LLM"),
++  experimentalNativeLlm: Config.all({
++    disabled: bool("OPENCODE_DISABLE_NATIVE_LLM"),
++    enabled: Config.boolean("OPENCODE_EXPERIMENTAL_NATIVE_LLM").pipe(Config.option),
++  }).pipe(Config.map((flags) => !flags.disabled && Option.getOrElse(flags.enabled, () => true))),
+   experimentalWebSockets: bool("OPENCODE_EXPERIMENTAL_WEBSOCKETS"),
+   client: Config.string("OPENCODE_CLIENT").pipe(Config.withDefault("cli")),
+ }) {}
+diff --git a/packages/opencode/src/provider/provider.ts b/packages/opencode/src/provider/provider.ts
+index 97f83bb..be9209c 100644
+--- a/packages/opencode/src/provider/provider.ts
++++ b/packages/opencode/src/provider/provider.ts
+@@ -2066,7 +2066,18 @@ const layer = Layer.effect(
+   }),
+ )
+ 
+-const priority = ["gpt-5", "claude-sonnet-4", "big-pickle", "gemini-3-pro"]
++const priority = [
++  "gpt-5",
++  "claude-sonnet-4",
++  "big-pickle",
++  "gemini-3-pro",
++  "mimo-v2-flash-free",
++  "ling-3.0-tiny-free",
++  "deepseek-v4-flash-free",
++  "qwen3.6-plus-free",
++  "longcat-2.5-preview-free",
++  "grok-code",
++]
+ const smallModelFamilyPriority = ["gemini-flash", "gpt-nano", "claude-haiku"]
+ export function sort<T extends { id: string }>(models: T[]) {
+   return sortBy(
+diff --git a/packages/opencode/src/session/retry.ts b/packages/opencode/src/session/retry.ts
+index 284c0f0..9ad26ae 100644
+--- a/packages/opencode/src/session/retry.ts
++++ b/packages/opencode/src/session/retry.ts
+@@ -23,10 +23,10 @@ export type Retryable = {
+   }
+ }
+ 
+-export const RETRY_INITIAL_DELAY = 2000
++export const RETRY_INITIAL_DELAY = 500
+ export const RETRY_BACKOFF_FACTOR = 2
+ export const RETRY_JITTER_FACTOR = 0.25
+-export const RETRY_MAX_DELAY_NO_HEADERS = 30_000 // 30 seconds
++export const RETRY_MAX_DELAY_NO_HEADERS = 10_000 // 10 seconds
+ export const RETRY_MAX_DELAY = 2_147_483_647 // max 32-bit signed integer for setTimeout
+ export const RETRY_MAX_RETRIES = 5
+ 
+
