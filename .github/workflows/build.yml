@@ -30,7 +30,7 @@ jobs:
       - name: Install deps
         run: cd src && bun install --no-save
 
-      - name: Build linux-x64
+      - name: Build linux-x64 (smoke on runner)
         run: cd src/packages/opencode && bun run build --single
 
       - name: Stash x64 binary
@@ -38,21 +38,22 @@ jobs:
           mkdir -p ci/out
           cp src/packages/opencode/dist/opencode-linux-x64/bin/opencode ci/out/opencode-linux-x64
 
-      - name: Build linux-arm64
-        run: cd src/packages/opencode && bun run build --linux-arm64
-
-      - name: Stash arm64 binary
-        run: |
-          cp src/packages/opencode/dist/opencode-linux-arm64/bin/opencode ci/out/opencode-linux-arm64
-
-      - name: Smoke test (x64 on runner)
+      - name: Smoke test x64
         run: chmod +x ci/out/opencode-linux-x64 && ci/out/opencode-linux-x64 --version
+
+      - name: Build linux-arm64-musl (Android)
+        run: cd src/packages/opencode && bun run build --linux-arm64-musl
+
+      - name: Stash arm64-musl binary
+        run: |
+          cp src/packages/opencode/dist/opencode-linux-arm64-musl/bin/opencode ci/out/opencode-linux-arm64-musl
+          file ci/out/opencode-linux-arm64-musl
 
       - name: List artifacts
         run: ls -la ci/out
 
       - uses: actions/upload-artifact@v4
         with:
-          name: opencode-speed
+          name: opencode-speed-musl
           path: ci/out/
           retention-days: 14
