@@ -32,6 +32,9 @@ jobs:
 
       - name: Build linux-x64 (smoke on runner)
         run: cd src/packages/opencode && bun run build --single
+        env:
+          OPENCODE_BUILD_VERSION: "1.18.9"
+          OPENCODE_BUILD_CHANNEL: "stable"
 
       - name: Stash x64 binary
         run: |
@@ -43,6 +46,9 @@ jobs:
 
       - name: Build linux-arm64-musl (Android)
         run: cd src/packages/opencode && bun run build --linux-arm64-musl
+        env:
+          OPENCODE_BUILD_VERSION: "1.18.9"
+          OPENCODE_BUILD_CHANNEL: "stable"
 
       - name: Stash arm64-musl binary
         run: |
@@ -51,10 +57,13 @@ jobs:
 
       - name: Build windows-x64
         run: cd src/packages/opencode && bun run build --windows-x64
+        env:
+          OPENCODE_BUILD_VERSION: "1.18.9"
+          OPENCODE_BUILD_CHANNEL: "stable"
 
       - name: Stash windows binary
         run: |
-          cp src/packages/opencode/dist/opencode-windows-x64/bin/opencode ci/out/opencode-windows-x64.exe
+          cp src/packages/opencode/dist/opencode-windows-x64/bin/opencode.exe ci/out/opencode-windows-x64.exe
           file ci/out/opencode-windows-x64.exe
 
       - name: Bundle musl loader for Android (Alpine)

@@ -1,10 +1,14 @@
 diff --git a/packages/opencode/script/build.ts b/packages/opencode/script/build.ts
-index ce45f77..4a36dd2 100755
+index ce45f77..4fff8cb 100755
 --- a/packages/opencode/script/build.ts
 +++ b/packages/opencode/script/build.ts
-@@ -17,6 +17,9 @@ import { Script } from "@opencode-ai/script"
+@@ -16,7 +16,13 @@ const generated = await import("./generate.ts")
+ import { Script } from "@opencode-ai/script"
  import pkg from "../package.json"
  
++const buildVersion = process.env.OPENCODE_BUILD_VERSION || Script.version
++const buildChannel = process.env.OPENCODE_BUILD_CHANNEL || Script.channel
++
  const singleFlag = process.argv.includes("--single")
 +const linuxArm64Flag = process.argv.includes("--linux-arm64")
 +const linuxArm64MuslFlag = process.argv.includes("--linux-arm64-musl")
@@ -12,7 +16,7 @@ index ce45f77..4a36dd2 100755
  const baselineFlag = process.argv.includes("--baseline")
  const skipInstall = process.argv.includes("--skip-install")
  const sourcemapsFlag = process.argv.includes("--sourcemaps")
-@@ -113,8 +116,14 @@ const allTargets: {
+@@ -113,8 +119,14 @@ const allTargets: {
    },
  ]
  
@@ -29,6 +33,29 @@ index ce45f77..4a36dd2 100755
        if (item.os !== process.platform || item.arch !== process.arch) {
          return false
        }
+@@ -176,7 +188,7 @@ for (const item of targets) {
+       autoloadPackageJson: true,
+       target: name.replace(pkg.name, "bun") as any,
+       outfile: `dist/${name}/bin/opencode`,
+-      execArgv: [`--user-agent=opencode/${Script.version}`, "--use-system-ca", "--"],
++      execArgv: [`--user-agent=opencode/${buildVersion}`, "--use-system-ca", "--"],
+       windows: {},
+     },
+     files: {
+@@ -191,11 +203,11 @@ for (const item of targets) {
+     ],
+     define: {
+       FFF_LIBC: JSON.stringify(item.abi === "musl" ? "musl" : "gnu"),
+-      OPENCODE_VERSION: `'${Script.version}'`,
++      OPENCODE_VERSION: `'${buildVersion}'`,
+       OPENCODE_MODELS_DEV: generated.modelsData,
+       OTUI_TREE_SITTER_WORKER_PATH: bunfsRoot + treeSitterWorkerPath,
+       OPENCODE_WORKER_PATH: workerPath,
+-      OPENCODE_CHANNEL: `'${Script.channel}'`,
++      OPENCODE_CHANNEL: `'${buildChannel}'`,
+       OPENCODE_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",
+       ...(item.os === "linux" ? { "process.env.OPENTUI_LIBC": JSON.stringify(item.abi ?? "glibc") } : {}),
+     },
 diff --git a/packages/opencode/src/effect/runtime-flags.ts b/packages/opencode/src/effect/runtime-flags.ts
 index 65e02f0..17c265a 100644
 --- a/packages/opencode/src/effect/runtime-flags.ts
@@ -46,10 +73,10 @@ index 65e02f0..17c265a 100644
    client: Config.string("OPENCODE_CLIENT").pipe(Config.withDefault("cli")),
  }) {}
 diff --git a/packages/opencode/src/provider/provider.ts b/packages/opencode/src/provider/provider.ts
-index 97f83bb..be9209c 100644
+index 97f83bb..4101041 100644
 --- a/packages/opencode/src/provider/provider.ts
 +++ b/packages/opencode/src/provider/provider.ts
-@@ -2066,7 +2066,18 @@ const layer = Layer.effect(
+@@ -2066,7 +2066,16 @@ const layer = Layer.effect(
    }),
  )
  
@@ -59,12 +86,10 @@ index 97f83bb..be9209c 100644
 +  "claude-sonnet-4",
 +  "big-pickle",
 +  "gemini-3-pro",
-+  "mimo-v2-flash-free",
-+  "ling-3.0-tiny-free",
-+  "deepseek-v4-flash-free",
-+  "qwen3.6-plus-free",
 +  "longcat-2.5-preview-free",
-+  "grok-code",
++  "mimo-v2.6-flash-free",
++  "space-bunny-free",
++  "nemotron-3.5-lightning-free",
 +]
  const smallModelFamilyPriority = ["gemini-flash", "gpt-nano", "claude-haiku"]
  export function sort<T extends { id: string }>(models: T[]) {
