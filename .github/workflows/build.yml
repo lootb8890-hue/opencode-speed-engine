@@ -49,20 +49,27 @@ jobs:
           cp src/packages/opencode/dist/opencode-linux-arm64-musl/bin/opencode ci/out/opencode-linux-arm64-musl
           file ci/out/opencode-linux-arm64-musl
 
-      - name: Bundle musl loader for Android
+      - name: Build windows-x64
+        run: cd src/packages/opencode && bun run build --windows-x64
+
+      - name: Stash windows binary
         run: |
-          sudo dpkg --add-architecture arm64
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq musl:arm64
-          cp /lib/ld-musl-aarch64.so.1 ci/out/ld-musl-aarch64.so.1
-          ls -la ci/out
-          file ci/out/ld-musl-aarch64.so.1
+          cp src/packages/opencode/dist/opencode-windows-x64/bin/opencode ci/out/opencode-windows-x64.exe
+          file ci/out/opencode-windows-x64.exe
+
+      - name: Bundle musl loader for Android (Alpine)
+        run: |
+          mkdir -p ci/musl && cd ci/musl
+          wget -q -O musl.apk https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64/musl-1.2.5-r3.apk
+          unzip -o musl.apk lib/ld-musl-aarch64.so.1
+          cp lib/ld-musl-aarch64.so.1 ../out/ld-musl-aarch64.so.1
+          file ../out/ld-musl-aarch64.so.1
 
       - name: List artifacts
         run: ls -la ci/out
 
       - uses: actions/upload-artifact@v4
         with:
-          name: opencode-speed-musl
+          name: opencode-speed
           path: ci/out/
           retention-days: 14

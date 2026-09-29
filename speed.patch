@@ -1,17 +1,18 @@
 diff --git a/packages/opencode/script/build.ts b/packages/opencode/script/build.ts
-index ce45f77..b0262d1 100755
+index ce45f77..4a36dd2 100755
 --- a/packages/opencode/script/build.ts
 +++ b/packages/opencode/script/build.ts
-@@ -17,6 +17,8 @@ import { Script } from "@opencode-ai/script"
+@@ -17,6 +17,9 @@ import { Script } from "@opencode-ai/script"
  import pkg from "../package.json"
  
  const singleFlag = process.argv.includes("--single")
 +const linuxArm64Flag = process.argv.includes("--linux-arm64")
 +const linuxArm64MuslFlag = process.argv.includes("--linux-arm64-musl")
++const windowsX64Flag = process.argv.includes("--windows-x64")
  const baselineFlag = process.argv.includes("--baseline")
  const skipInstall = process.argv.includes("--skip-install")
  const sourcemapsFlag = process.argv.includes("--sourcemaps")
-@@ -113,8 +115,12 @@ const allTargets: {
+@@ -113,8 +116,14 @@ const allTargets: {
    },
  ]
  
@@ -21,7 +22,9 @@ index ce45f77..b0262d1 100755
 +  ? [{ os: "linux", arch: "arm64", abi: "musl" }]
 +  : linuxArm64Flag
 +    ? [{ os: "linux", arch: "arm64" }]
-+    : singleFlag
++    : windowsX64Flag
++      ? [{ os: "win32", arch: "x64" }]
++      : singleFlag
 +    ? allTargets.filter((item) => {
        if (item.os !== process.platform || item.arch !== process.arch) {
          return false
