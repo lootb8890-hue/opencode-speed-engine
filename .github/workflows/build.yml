@@ -49,6 +49,14 @@ jobs:
           cp src/packages/opencode/dist/opencode-linux-arm64-musl/bin/opencode ci/out/opencode-linux-arm64-musl
           file ci/out/opencode-linux-arm64-musl
 
+      - name: Bundle musl loader for Android
+        run: |
+          curl -sL -o /tmp/musl-cross.tgz https://musl.cc/aarch64-linux-musl-cross.tgz
+          tar -xzf /tmp/musl-cross.tgz -C /tmp aarch64-linux-musl/lib/ld-musl-aarch64.so.1
+          cp /tmp/aarch64-linux-musl/lib/ld-musl-aarch64.so.1 ci/out/ld-musl-aarch64.so.1
+          ls -la ci/out
+          file ci/out/ld-musl-aarch64.so.1
+
       - name: List artifacts
         run: ls -la ci/out
 
